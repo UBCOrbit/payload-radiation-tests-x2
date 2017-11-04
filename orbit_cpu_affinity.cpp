@@ -1,4 +1,6 @@
-#include "orbit_output.h"
+#include "orbit_cpu_affinity.h"
+
+#include <stdio.h>
 
 #include <sys/syscall.h>
 #include <pthread.h>
@@ -13,7 +15,7 @@ void setCurrentThreadAffinityMask(cpu_set_t mask)
     if (syscallres)
     {
         err = errno;
-        LOGE("Error in the syscall setaffinity: mask=%d=0x%x err=%ld=0x%lx", mask, mask, err, err);
+        fprintf(stderr, "Error in the syscall setaffinity: mask=%d=0x%x err=%ld=0x%lx", mask, mask, err, err);
     }
 }
 

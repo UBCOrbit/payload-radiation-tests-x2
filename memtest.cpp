@@ -1,10 +1,10 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <limits.h>
 #include "orbit_timing.h"
 #include "memtest.h"
 #include "orbit_cpu_affinity.h"
-#include "orbit_output.h"
 
 size_t count1Bits(char value)
 {
@@ -185,7 +185,7 @@ void memtest_cacheEff_core(char** matrix, size_t dim, useconds_t sleepTime, cons
 
     millisecs = (t1 - t0) / 1000.0L;
 
-    LOGD("id=%s, 0To1=%ld, 1To0=%ld, time=%Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
+    printf("id=%s, 0To1=%ld, 1To0=%ld, time=%Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
 }
 
 void memtest_cacheIneff_core(char** matrix, size_t dim, useconds_t sleepTime, const char *logTag)
@@ -224,37 +224,31 @@ void memtest_cacheIneff_core(char** matrix, size_t dim, useconds_t sleepTime, co
 
     millisecs = (t1 - t0) / 1000.0L;
 
-    LOGD("id=%s, 0To1=%ld, 1To0=%ld, time=%Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
+    printf("id=%s, 0To1=%ld, 1To0=%ld, time=%Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-void memtest_cacheEff(useconds_t sleepTime, size_t dim, const char *logTag)
+void memtest_cacheEff(useconds_t sleepTime, size_t dim, size_t num, const char *logTag)
 {
     char** matrix = allocateMatrix(dim);
 
-    while(true)
-    {
+    for (size_t i = 0; num == 0 || i < num; i++) {
         memtest_cacheEff_core(matrix, dim, sleepTime, logTag);
     }
 }
-#pragma clang diagnostic pop
 
-void memtest_L1cacheEff(useconds_t sleepTime, int cpu)
+void memtest_L1cacheEff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    memtest_cacheEff(sleepTime, 96, LOG_TAG_MEM_TEST_L1_CACHE_EFF); //  9 KB matrix < 16 KB L1 Cache
+    memtest_cacheEff(sleepTime, 96, num, LOG_TAG_MEM_TEST_L1_CACHE_EFF); //  9 KB matrix < 16 KB L1 Cache
 }
 
-void memtest_L2cacheEff(useconds_t sleepTime, int cpu)
+void memtest_L2cacheEff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    memtest_cacheEff(sleepTime, 1024, LOG_TAG_MEM_TEST_L2_CACHE_EFF); //  1 MB matrix < 2 MB L2 Cache
+    memtest_cacheEff(sleepTime, 1024, num, LOG_TAG_MEM_TEST_L2_CACHE_EFF); //  1 MB matrix < 2 MB L2 Cache
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-void memtest_cacheIneff(useconds_t sleepTime, int cpu)
+void memtest_cacheIneff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
 
@@ -262,15 +256,11 @@ void memtest_cacheIneff(useconds_t sleepTime, int cpu)
 
     char** matrix = allocateMatrix(dim);
 
-    while(true)
-    {
+    for (size_t i = 0; num == 0 || i < num; i++) {
         memtest_cacheEff_core(matrix, dim, sleepTime, LOG_TAG_MEM_TEST_CACHE_INEFF);
     }
 }
-#pragma clang diagnostic pop
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void memtest_cacheCompare(useconds_t sleepTime)
 {
     const char* logTag = "MemTestCacheCompare";
@@ -280,10 +270,6 @@ void memtest_cacheCompare(useconds_t sleepTime)
     char** matrixEff = allocateMatrix(2048);
     char** matrixIneff = allocateMatrix(2048);
 
-    while(true)
-    {
-        memtest_cacheEff_core(matrixEff, dim, sleepTime, logTag);
-        memtest_cacheIneff_core(matrixIneff, dim, sleepTime, logTag);
-    }
+    memtest_cacheEff_core(matrixEff, dim, sleepTime, logTag);
+    memtest_cacheIneff_core(matrixIneff, dim, sleepTime, logTag);
 }
-#pragma clang diagnostic pop

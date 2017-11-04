@@ -14,9 +14,9 @@ struct memtest_results
     size_t oneToZeroFlips;
 };
 
-void memtest_L1cacheEff(useconds_t sleepTime, int cpu);
-void memtest_L2cacheEff(useconds_t sleepTime, int cpu);
-void memtest_cacheIneff(useconds_t sleepTime, int cpu);
+void memtest_L1cacheEff(useconds_t sleepTime, size_t num, int cpu);
+void memtest_L2cacheEff(useconds_t sleepTime, size_t num, int cpu);
+void memtest_cacheIneff(useconds_t sleepTime, size_t num, int cpu);
 void memtest_cacheCompare(useconds_t sleepTime);
 
 #endif //RADTEST_MEMTEST_H
