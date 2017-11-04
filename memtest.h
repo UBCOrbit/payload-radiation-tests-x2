@@ -17,6 +17,6 @@ struct memtest_results
 void memtest_L1cacheEff(useconds_t sleepTime, size_t num, int cpu);
 void memtest_L2cacheEff(useconds_t sleepTime, size_t num, int cpu);
 void memtest_cacheIneff(useconds_t sleepTime, size_t num, int cpu);
-void memtest_cacheCompare(useconds_t sleepTime);
+void memtest_cacheCompare(useconds_t sleepTime, size_t dim, size_t num);
 
 #endif //RADTEST_MEMTEST_H
