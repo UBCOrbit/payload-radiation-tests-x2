@@ -9,3 +9,6 @@ compile_commands.json
 CTestTestfile.cmake
 
 radiation-tests
+
+.idea
+cmake-build-debug
