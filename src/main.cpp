@@ -1,4 +1,4 @@
-#include "memtest.h"
+#include "test_mem.h"
 
 int main()
 {
@@ -6,5 +6,5 @@ int main()
     //memtest_L2cacheEff(1000, 100, -1);
     //memtest_cacheIneff(1000, 100, -1);
 
-    memtest_cacheCompare(1000, 2048, 100);
+    orbit::testMemCacheCompare(1000, 2048, 100);
 }

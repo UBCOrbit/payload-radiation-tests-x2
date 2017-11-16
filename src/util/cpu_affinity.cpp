@@ -1,4 +1,4 @@
-#include "orbit_cpu_affinity.h"
+#include "cpu_affinity.h"
 
 #include <stdio.h>
 
@@ -6,6 +6,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <errno.h>
+
+namespace orbit
+{
 
 void setCurrentThreadAffinityMask(cpu_set_t mask)
 {
@@ -27,4 +30,6 @@ void setCurrentThreadAffinity(int cpuNum)
     CPU_SET(cpuNum, &set);
 
     setCurrentThreadAffinityMask(set);
+}
+
 }

@@ -1,11 +1,20 @@
+#include "test_mem.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
-#include "orbit_timing.h"
-#include "memtest.h"
-#include "orbit_cpu_affinity.h"
+#include "util/timing.h"
+#include "util/cpu_affinity.h"
+#include "util/logging.h"
+
+#define LOG_TAG_TEST_MEM_L1_CACHE_EFF "TestMemL1CacheEff"
+#define LOG_TAG_TEST_MEM_L2_CACHE_EFF "TestMemL2CacheEff"
+#define LOG_TAG_TEST_MEM_CACHE_INEFF "TestMemCacheIneff"
+
+namespace orbit
+{
 
 size_t count1Bits(char value)
 {
@@ -25,7 +34,9 @@ size_t count0Bits(char value)
     return (CHAR_BIT * sizeof value) - count1Bits(value);
 }
 
-void cacheEff_setZeros(char *matrix, const size_t dim)
+/********************************** CACHE EFFICIENT ***********************************/
+
+void cacheEffSetZeros(char *matrix, const size_t dim)
 {
     size_t i, j;
 
@@ -35,7 +46,7 @@ void cacheEff_setZeros(char *matrix, const size_t dim)
     }
 }
 
-size_t cacheEff_checkZerosAndFlip(char *matrix, const size_t dim)
+size_t cacheEffCheckZerosAndFlip(char *matrix, const size_t dim)
 {
     size_t i, j;
     size_t zeroToOneFlips = 0;
@@ -52,7 +63,7 @@ size_t cacheEff_checkZerosAndFlip(char *matrix, const size_t dim)
     return zeroToOneFlips;
 }
 
-size_t cacheEff_checkOnesAndFlip(char *matrix, const size_t dim)
+size_t cacheEffCheckOnesAndFlip(char *matrix, const size_t dim)
 {
     size_t i, j;
     size_t oneToZeroFlips = 0;
@@ -69,7 +80,9 @@ size_t cacheEff_checkOnesAndFlip(char *matrix, const size_t dim)
     return oneToZeroFlips;
 }
 
-void cacheIneff_setZeros(char *matrix, const size_t dim)
+/********************************** CACHE INEFFICIENT ***********************************/
+
+void cacheIneffSetZeros(char *matrix, const size_t dim)
 {
     size_t i, j;
 
@@ -82,7 +95,7 @@ void cacheIneff_setZeros(char *matrix, const size_t dim)
     }
 }
 
-size_t cacheIneff_checkZerosAndFlip(char *matrix, const size_t dim)
+size_t cacheIneffCheckZerosAndFlip(char *matrix, const size_t dim)
 {
     size_t i, j;
     size_t zeroToOneFlips = 0;
@@ -102,7 +115,7 @@ size_t cacheIneff_checkZerosAndFlip(char *matrix, const size_t dim)
     return zeroToOneFlips;
 }
 
-size_t cacheIneff_checkOnesAndFlip(char *matrix, const size_t dim)
+size_t cacheIneffCheckOnesAndFlip(char *matrix, const size_t dim)
 {
     size_t i, j;
     size_t zeroToOneFlips = 0;
@@ -122,50 +135,74 @@ size_t cacheIneff_checkOnesAndFlip(char *matrix, const size_t dim)
     return zeroToOneFlips;
 }
 
-/*char** allocateMatrix(const size_t dim)
-{
-    char** matrix = new char *[dim];
-    for (size_t i = 0; i < dim; ++i)
-    {
-        matrix[i] = new char[dim];
-    }
-    return matrix;
-}
-
-void deallocateMatrix(char** matrix, size_t dim)
-{
-    for (size_t a = 0; a < dim; ++a)
-    {
-        delete [] matrix[a];
-    }
-    delete [] matrix;
-}*/
-
-void memtest_cacheEff_core(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
+void testMemCacheEffCore(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
 {
     long double millisecs;
     size_t tmpResult;
-    memtest_results totalResults = {0,0};
+    testMemResults totalResults = {0,0};
 
     timestamp_t t0 = get_timestamp();
 
     //------------------------------------------------------
 
     // Set 0's
-    cacheEff_setZeros(matrix, dim);
+    cacheEffSetZeros(matrix, dim);
 
     // Let radiation do its thing
     usleep(sleepTime);
 
     // Check 0's, Set 1's
-    tmpResult = cacheEff_checkZerosAndFlip(matrix, dim);
+    tmpResult = cacheEffCheckZerosAndFlip(matrix, dim);
     totalResults.zeroToOneFlips += tmpResult;
 
     // Let radiation do its thing
     usleep(sleepTime);
 
     // Check 1's, Set 0's
-    tmpResult = cacheEff_checkOnesAndFlip(matrix, dim);
+    tmpResult = cacheEffCheckOnesAndFlip(matrix, dim);
+    totalResults.oneToZeroFlips += tmpResult;
+
+    // Let radiation do its thing
+    usleep(sleepTime);
+
+    //------------------------------------------------------
+
+    timestamp_t t1 = get_timestamp();
+
+    millisecs = (t1 - t0) / 1000.0L;
+
+    //printf("id = %s, 0To1 = %ld, 1To0 = %ld, time = %Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
+
+    char resultStr[256];
+    sprintf(resultStr, "0To1 = %ld, 1To0 = %ld", totalResults.zeroToOneFlips, totalResults.oneToZeroFlips);
+    logResult(logTag, resultStr, millisecs);
+}
+
+void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
+{
+    long double millisecs;
+    size_t tmpResult;
+    testMemResults totalResults = {0,0};
+
+    timestamp_t t0 = get_timestamp();
+
+    //------------------------------------------------------
+
+    // Set 0's
+    cacheIneffSetZeros(matrix, dim);
+
+    // Let radiation do its thing
+    usleep(sleepTime);
+
+    // Check 0's, Set 1's
+    tmpResult = cacheIneffCheckZerosAndFlip(matrix, dim);
+    totalResults.zeroToOneFlips += tmpResult;
+
+    // Let radiation do its thing
+    usleep(sleepTime);
+
+    // Check 1's, Set 0's
+    tmpResult = cacheIneffCheckOnesAndFlip(matrix, dim);
     totalResults.oneToZeroFlips += tmpResult;
 
     // Let radiation do its thing
@@ -180,69 +217,30 @@ void memtest_cacheEff_core(char *matrix, size_t dim, useconds_t sleepTime, const
     printf("id = %s, 0To1 = %ld, 1To0 = %ld, time = %Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
 }
 
-void memtest_cacheIneff_core(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
-{
-    long double millisecs;
-    size_t tmpResult;
-    memtest_results totalResults = {0,0};
-
-    timestamp_t t0 = get_timestamp();
-
-    //------------------------------------------------------
-
-    // Set 0's
-    cacheIneff_setZeros(matrix, dim);
-
-    // Let radiation do its thing
-    usleep(sleepTime);
-
-    // Check 0's, Set 1's
-    tmpResult = cacheIneff_checkZerosAndFlip(matrix, dim);
-    totalResults.zeroToOneFlips += tmpResult;
-
-    // Let radiation do its thing
-    usleep(sleepTime);
-
-    // Check 1's, Set 0's
-    tmpResult = cacheIneff_checkOnesAndFlip(matrix, dim);
-    totalResults.oneToZeroFlips += tmpResult;
-
-    // Let radiation do its thing
-    usleep(sleepTime);
-
-    //------------------------------------------------------
-
-    timestamp_t t1 = get_timestamp();
-
-    millisecs = (t1 - t0) / 1000.0L;
-
-    printf("id = %s, 0To1 = %ld, 1To0 = %ld, time = %Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
-}
-
-void memtest_cacheEff(useconds_t sleepTime, size_t dim, size_t num, const char *logTag)
+void testMemCacheEff(useconds_t sleepTime, size_t dim, size_t num, const char *logTag)
 {
     char *matrix = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
     for (size_t i = 0; num == 0 || i < num; i++) {
-        memtest_cacheEff_core(matrix, dim, sleepTime, logTag);
+        testMemCacheEffCore(matrix, dim, sleepTime, logTag);
     }
 
     free(matrix);
 }
 
-void memtest_L1cacheEff(useconds_t sleepTime, size_t num, int cpu)
+void testMemL1CacheEff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    memtest_cacheEff(sleepTime, 96, num, LOG_TAG_MEM_TEST_L1_CACHE_EFF); //  9 KB matrix < 16 KB L1 Cache
+    testMemCacheEff(sleepTime, 96, num, LOG_TAG_TEST_MEM_L1_CACHE_EFF); //  9 KB matrix < 16 KB L1 Cache
 }
 
-void memtest_L2cacheEff(useconds_t sleepTime, size_t num, int cpu)
+void testMemL2CacheEff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    memtest_cacheEff(sleepTime, 1024, num, LOG_TAG_MEM_TEST_L2_CACHE_EFF); //  1 MB matrix < 2 MB L2 Cache
+    testMemCacheEff(sleepTime, 1024, num, LOG_TAG_TEST_MEM_L2_CACHE_EFF); //  1 MB matrix < 2 MB L2 Cache
 }
 
-void memtest_cacheIneff(useconds_t sleepTime, size_t num, int cpu)
+void testMemCacheIneff(useconds_t sleepTime, size_t num, int cpu)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
 
@@ -251,13 +249,13 @@ void memtest_cacheIneff(useconds_t sleepTime, size_t num, int cpu)
     char *matrix = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
     for (size_t i = 0; num == 0 || i < num; i++) {
-        memtest_cacheEff_core(matrix, dim, sleepTime, LOG_TAG_MEM_TEST_CACHE_INEFF);
+        testMemCacheEffCore(matrix, dim, sleepTime, LOG_TAG_TEST_MEM_CACHE_INEFF);
     }
 
     free(matrix);
 }
 
-void memtest_cacheCompare(useconds_t sleepTime, size_t dim, size_t num)
+void testMemCacheCompare(useconds_t sleepTime, size_t dim, size_t num)
 {
     const char* logTag = "MemTestCacheCompare";
 
@@ -265,15 +263,17 @@ void memtest_cacheCompare(useconds_t sleepTime, size_t dim, size_t num)
     char *matrixIneff = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
     for (size_t i = 0; i < num; i++) {
-        memtest_cacheEff_core(matrixEff, dim, sleepTime, logTag);
+        testMemCacheEffCore(matrixEff, dim, sleepTime, logTag);
     }
 
     printf("\n");
 
     for (size_t i = 0; i < num; i++) {
-        memtest_cacheIneff_core(matrixIneff, dim, sleepTime, logTag);
+        testMemCacheIneffCore(matrixIneff, dim, sleepTime, logTag);
     }
 
     free(matrixEff);
     free(matrixIneff);
+}
+
 }
