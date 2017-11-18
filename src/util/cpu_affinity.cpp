@@ -1,16 +1,16 @@
 #include "cpu_affinity.h"
 
 #include <stdio.h>
-
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sched.h>
 
 namespace orbit
 {
 
-void setCurrentThreadAffinityMask(cpu_set_t mask)
+/*void setCurrentThreadAffinityMask(cpu_set_t mask)
 {
     long err, syscallres;
     pid_t pid = getgid();
@@ -30,6 +30,22 @@ void setCurrentThreadAffinity(int cpuNum)
     CPU_SET(cpuNum, &set);
 
     setCurrentThreadAffinityMask(set);
+}*/
+
+int setCurrentThreadAffinity(int cpuNum)
+{
+    int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpuNum < 0 || cpuNum >= num_cores)
+    {
+        return EINVAL;
+    }
+
+   cpu_set_t cpuset;
+   CPU_ZERO(&cpuset);
+   CPU_SET(cpuNum, &cpuset);
+
+   pthread_t current_thread = pthread_self();    
+   return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
 }
 
 }

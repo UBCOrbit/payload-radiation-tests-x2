@@ -4,7 +4,7 @@
 namespace orbit
 {
 
-void setCurrentThreadAffinity(int cpuNum);
+int setCurrentThreadAffinity(int cpuNum);
 
 }
 

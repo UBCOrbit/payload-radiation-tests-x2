@@ -175,7 +175,7 @@ void testMemCacheEffCore(char *matrix, size_t dim, useconds_t sleepTime, const c
 
     char resultStr[256];
     sprintf(resultStr, "0To1 = %ld, 1To0 = %ld", totalResults.zeroToOneFlips, totalResults.oneToZeroFlips);
-    logResult(logTag, resultStr, millisecs);
+    Logging::getInstance().logResult(logTag, resultStr, millisecs);
 }
 
 void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
@@ -214,7 +214,9 @@ void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, const
 
     millisecs = (t1 - t0) / 1000.0L;
 
-    printf("id = %s, 0To1 = %ld, 1To0 = %ld, time = %Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
+    char resultStr[256];
+    sprintf(resultStr, "0To1 = %ld, 1To0 = %ld", totalResults.zeroToOneFlips, totalResults.oneToZeroFlips);
+    Logging::getInstance().logResult(logTag, resultStr, millisecs);
 }
 
 void testMemCacheEff(useconds_t sleepTime, size_t dim, size_t num, const char *logTag)
