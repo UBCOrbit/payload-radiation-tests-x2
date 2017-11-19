@@ -6,7 +6,9 @@ namespace orbit
 
 typedef unsigned long long timestamp_t;
 
-timestamp_t get_timestamp();
+timestamp_t getTimestamp();
+
+long getEpochMillis();
 
 }
 

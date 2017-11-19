@@ -7,11 +7,6 @@
 #include <limits.h>
 #include "util/timing.h"
 #include "util/cpu_affinity.h"
-#include "util/logging.h"
-
-#define LOG_TAG_TEST_MEM_L1_CACHE_EFF "TestMemL1CacheEff"
-#define LOG_TAG_TEST_MEM_L2_CACHE_EFF "TestMemL2CacheEff"
-#define LOG_TAG_TEST_MEM_CACHE_INEFF "TestMemCacheIneff"
 
 namespace orbit
 {
@@ -135,13 +130,26 @@ size_t cacheIneffCheckOnesAndFlip(char *matrix, const size_t dim)
     return zeroToOneFlips;
 }
 
-void testMemCacheEffCore(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
+void logResult(LogQueue *logQueue, test_id_t testId, testMemResults_t results, long double millisecs)
+{
+    testResult_t testResult;
+
+    snprintf(testResult.data, sizeof(testResult.data), "0To1 = %ld, 1To0 = %ld", results.zeroToOneFlips, results.oneToZeroFlips);
+
+    testResult.testId = testId;
+    testResult.execTime = millisecs;
+    testResult.timestamp = getEpochMillis();
+
+    logQueue->enqueueTestResult(testResult);
+}
+
+void testMemCacheEffCore(char *matrix, size_t dim, useconds_t sleepTime, test_id_t testId, LogQueue *logQueue)
 {
     long double millisecs;
     size_t tmpResult;
-    testMemResults totalResults = {0,0};
+    testMemResults_t totalResults = {0,0};
 
-    timestamp_t t0 = get_timestamp();
+    timestamp_t t0 = getTimestamp();
 
     //------------------------------------------------------
 
@@ -167,24 +175,20 @@ void testMemCacheEffCore(char *matrix, size_t dim, useconds_t sleepTime, const c
 
     //------------------------------------------------------
 
-    timestamp_t t1 = get_timestamp();
+    timestamp_t t1 = getTimestamp();
 
     millisecs = (t1 - t0) / 1000.0L;
 
-    //printf("id = %s, 0To1 = %ld, 1To0 = %ld, time = %Lf\n", logTag, totalResults.zeroToOneFlips, totalResults.oneToZeroFlips, millisecs);
-
-    char resultStr[256];
-    sprintf(resultStr, "0To1 = %ld, 1To0 = %ld", totalResults.zeroToOneFlips, totalResults.oneToZeroFlips);
-    Logging::getInstance().logResult(logTag, resultStr, millisecs);
+    logResult(logQueue, testId, totalResults, millisecs);
 }
 
-void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, const char *logTag)
+void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, test_id_t testId, LogQueue *logQueue)
 {
     long double millisecs;
     size_t tmpResult;
-    testMemResults totalResults = {0,0};
+    testMemResults_t totalResults = {0,0};
 
-    timestamp_t t0 = get_timestamp();
+    timestamp_t t0 = getTimestamp();
 
     //------------------------------------------------------
 
@@ -210,39 +214,38 @@ void testMemCacheIneffCore(char *matrix, size_t dim, useconds_t sleepTime, const
 
     //------------------------------------------------------
 
-    timestamp_t t1 = get_timestamp();
+    timestamp_t t1 = getTimestamp();
 
     millisecs = (t1 - t0) / 1000.0L;
 
-    char resultStr[256];
-    sprintf(resultStr, "0To1 = %ld, 1To0 = %ld", totalResults.zeroToOneFlips, totalResults.oneToZeroFlips);
-    Logging::getInstance().logResult(logTag, resultStr, millisecs);
+    printf("%Lf", millisecs);
+    logResult(logQueue, testId, totalResults, millisecs);
 }
 
-void testMemCacheEff(useconds_t sleepTime, size_t dim, size_t num, const char *logTag)
+void testMemCacheEff(useconds_t sleepTime, size_t dim, size_t num, test_id_t testId, LogQueue *logQueue)
 {
     char *matrix = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
     for (size_t i = 0; num == 0 || i < num; i++) {
-        testMemCacheEffCore(matrix, dim, sleepTime, logTag);
+        testMemCacheEffCore(matrix, dim, sleepTime, testId, logQueue);
     }
 
     free(matrix);
 }
 
-void testMemL1CacheEff(useconds_t sleepTime, size_t num, int cpu)
+void testMemL1CacheEff(useconds_t sleepTime, size_t num, int cpu, LogQueue *logQueue)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    testMemCacheEff(sleepTime, 96, num, LOG_TAG_TEST_MEM_L1_CACHE_EFF); //  9 KB matrix < 16 KB L1 Cache
+    testMemCacheEff(sleepTime, 96, num, LogQueue::TEST_MEM_L1_CACHE_EFF, logQueue); //  9 KB matrix < 16 KB L1 Cache
 }
 
-void testMemL2CacheEff(useconds_t sleepTime, size_t num, int cpu)
+void testMemL2CacheEff(useconds_t sleepTime, size_t num, int cpu, LogQueue *logQueue)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
-    testMemCacheEff(sleepTime, 1024, num, LOG_TAG_TEST_MEM_L2_CACHE_EFF); //  1 MB matrix < 2 MB L2 Cache
+    testMemCacheEff(sleepTime, 1024, num, LogQueue::TEST_MEM_L2_CACHE_EFF, logQueue); //  1 MB matrix < 2 MB L2 Cache
 }
 
-void testMemCacheIneff(useconds_t sleepTime, size_t num, int cpu)
+void testMemCacheIneff(useconds_t sleepTime, size_t num, int cpu, LogQueue *logQueue)
 {
     if(cpu != -1) setCurrentThreadAffinity(cpu);
 
@@ -251,16 +254,14 @@ void testMemCacheIneff(useconds_t sleepTime, size_t num, int cpu)
     char *matrix = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
     for (size_t i = 0; num == 0 || i < num; i++) {
-        testMemCacheEffCore(matrix, dim, sleepTime, LOG_TAG_TEST_MEM_CACHE_INEFF);
+        testMemCacheEffCore(matrix, dim, sleepTime, LogQueue::TEST_MEM_CACHE_INEFF, logQueue);
     }
 
     free(matrix);
 }
 
-void testMemCacheCompare(useconds_t sleepTime, size_t dim, size_t num)
+/*void testMemCacheCompare(useconds_t sleepTime, size_t dim, size_t num)
 {
-    const char* logTag = "MemTestCacheCompare";
-
     char *matrixEff = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
     char *matrixIneff = reinterpret_cast<char*>(malloc(dim * dim * sizeof(char)));
 
@@ -276,6 +277,6 @@ void testMemCacheCompare(useconds_t sleepTime, size_t dim, size_t num)
 
     free(matrixEff);
     free(matrixIneff);
-}
+}*/
 
 }
