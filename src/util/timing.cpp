@@ -5,6 +5,9 @@
 namespace orbit
 {
 
+/*
+ * Returns current timestamp in microseconds
+ */
 timestamp_t getTimestamp()
 {
     struct timeval now;

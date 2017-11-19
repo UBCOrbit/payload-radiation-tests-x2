@@ -1,26 +1,24 @@
-#include "log_queue.h"
+#include "result_queue.h"
 
 #include <iostream>
 #include <sys/time.h>
 
-#include "logging.h"
-
 namespace orbit
 {
 
-LogQueue::LogQueue()
+ResultQueue::ResultQueue()
 {
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
 }
 
-LogQueue::~LogQueue()
+ResultQueue::~ResultQueue()
 {
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
 }
 
-void LogQueue::enqueueTestResult(testResult_t resultData)
+void ResultQueue::enqueueTestResult(testResult_t resultData)
 {
     pthread_mutex_lock(&mutex);
     queue.push(resultData);
@@ -28,7 +26,7 @@ void LogQueue::enqueueTestResult(testResult_t resultData)
     pthread_mutex_unlock(&mutex);
 }
 
-testResult_t LogQueue::dequeueTestResult(int timeoutMillis)
+testResult_t ResultQueue::dequeueTestResult(int timeoutMillis)
 {
     struct timeval tv;
     struct timespec ts;

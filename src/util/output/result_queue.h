@@ -1,5 +1,5 @@
-#ifndef RADTEST_ORBIT_LOG_QUEUE_H
-#define RADTEST_ORBIT_LOG_QUEUE_H
+#ifndef RADTEST_ORBIT_RESULT_QUEUE_H
+#define RADTEST_ORBIT_RESULT_QUEUE_H
 
 #include <pthread.h>
 #include <queue>
@@ -17,7 +17,7 @@ typedef struct
     long timestamp; // millis
 } testResult_t;
 
-class LogQueue
+class ResultQueue
 {
     std::queue<testResult_t> queue;
     pthread_mutex_t mutex;
@@ -33,8 +33,8 @@ public:
     static const test_id_t TEST_WRITE             = 4;
     static const test_id_t TEST_PERSIST           = 5;
 
-    LogQueue();
-    ~LogQueue();
+    ResultQueue();
+    ~ResultQueue();
 
     void enqueueTestResult(testResult_t resultData);
     testResult_t dequeueTestResult(int timeoutMillis);
@@ -42,4 +42,4 @@ public:
 
 }
 
-#endif //RADTEST_ORBIT_LOG_QUEUE_H
+#endif //RADTEST_ORBIT_RESULT_QUEUE_H
