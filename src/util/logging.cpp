@@ -15,9 +15,14 @@ Logging::Logging()
     // Nothing to construct
 }
 
-void Logging::logResult(const char *testId, const char *data, long double time)
+void logResult(test_id_t testId, const char *data, long double execTime, time_t timestamp)
 {
-    printf("testId = %s, data = %s, time = %Lf\n", testId, data, time);
+    printf("testId = %d, data = %s, execTime = %Lf, timestamp=%Ld\n", testId, data, execTime, timestamp);
 }
+
+// void Logging::logResult(const char *testId, const char *data, long double time)
+// {
+//     printf("testId = %s, data = %s, time = %Lf\n", testId, data, time);
+// }
 
 }
