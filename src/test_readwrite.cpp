@@ -4,24 +4,6 @@
 /************************************* READ *************************************/
 
 /*
- * Initializes a block of memory with an incrementing bit pattern.
- * To be called before irradiation begins
- */
-char* readTestInit(size_t bytes)
-{
-    char *matrix = reinterpret_cast<char*>(malloc(bytes * sizeof(char)));
-
-    char pattern = 0;
-    for(int i = 0; i < bytes; i++)
-    {
-        matrix[i] = pattern;
-        pattern++;
-    }
-
-    return matrix;
-}
-
-/*
  * Verifies a block of memory contains an incrementing bit pattern.
  * To be called during irradiation and after
  */
@@ -47,24 +29,47 @@ int readTestCheck(char *matrix, size_t bytes)
 
 /*
  * Initializes a block of memory with an incrementing bit pattern.
+ * To be called before irradiation begins
  */
-char* writeTestInit(size_t bytes)
+char* initIncrementing(size_t bytes)
 {
-    return nullptr;
+    char *matrix = reinterpret_cast<char*>(malloc(bytes * sizeof(char)));
+
+    char pattern = 0;
+    for(int i = 0; i < bytes; i++)
+    {
+        matrix[i] = pattern;
+        pattern++;
+    }
+
+    return matrix;
 }
 
 /*
- * Writes the inverse of an incrementing bit pattern to the provided block of memory
+ * Writes the one's complement of an incrementing bit pattern to the provided block of memory
  */
-void writeTestWrite(char* ptr, size_t bytes)
+void writeIncrementingComplement(char *ptr, size_t bytes)
 {
+    char pattern = 0;
+    for(int i = 0; i < bytes; i++){
+        ptr[i] = ~pattern;
+        pattern++;
+    }
 }
 
 /*
- * Verifies a block of memory contains the inverse of an incrementing bit pattern
+ * Verifies a block of memory contains the inverse (one's complement) of an incrementing bit pattern
  */
 int writeTestCheck(char* ptr, size_t bytes)
 {
+    int errorCount = 0;
+    char pattern = 0;
+    for(int i = 0; i < bytes; i++) {
+        if(pattern != ~ptr[i]) errorCount++;
+        pattern++;
+    }
+
+    return errorCount;
 }
 
 
@@ -72,8 +77,8 @@ int writeTestCheck(char* ptr, size_t bytes)
 
 void readWriteTest(size_t bytes, size_t iterations)
 {
-    char* readBlock = readTestInit(bytes);
-    char* writeBlock = writeTestInit(bytes);
+    char* readBlock = initIncrementing(bytes);
+    char* writeBlock = initIncrementing(bytes);
 
     int count = 0;
     while(count < 1000)/*TODO input over USB*/
@@ -84,7 +89,7 @@ void readWriteTest(size_t bytes, size_t iterations)
     }
 
     // Radiation started
-    writeTestWrite(writeBlock, bytes);
+    writeIncrementingComplement(writeBlock, bytes);
 
     // Begin checking
     for(int i = 0; i < iterations; i++)
